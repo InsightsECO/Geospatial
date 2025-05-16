@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshCart | AI-Powered Retail Expansion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <style>
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #00CEFF;
+            --accent: #FD79A8;
+            --dark: #2D3436;
+            --light: #F5F6FA;
+            --glass: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.18);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: 90px 1fr;
+            height: 100vh;
+            backdrop-filter: blur(5px);
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 0 2.5rem;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-weight: 700;
+            font-size: 1.8rem;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, #E0F7FA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar {
+            background: var(--glass);
+            padding: 1.8rem;
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--glass-border);
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
+            overflow-y: auto;
+            z-index: 5;
+        }
+
+        .main-content {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            grid-template-rows: 450px 1fr;
+            gap: 1.8rem;
+            overflow-y: auto;
+        }
+
+        /* Ultra-Modern Map Container */
+        .map-container {
+            grid-column: 1;
+            grid-row: 1;
+            background: var(--glass);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #mainMap {
+            height: 100%;
+            width: 100%;
+            border-radius: 16px;
+        }
+
+        /* Futuristic Stats Panel */
+        .stats-panel {
+            grid-column: 2;
+            grid-row: 1 / span 2;
+            background: var(--glass);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border);
+            padding: 1.8rem;
+            overflow-y: auto;
+            backdrop-filter: blur(8px);
+        }
+
+        /* Advanced Charts Grid */
+        .charts-container {
+            grid-column: 1;
+            grid-row: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+        }
+
+        .chart-panel {
+            background: var(--glass);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            backdrop-filter: blur(8px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        /* Form Elements with Glass Effect */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.6rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 0.7rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-family: inherit;
+            color: var(--dark);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input[type="range"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--secondary);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 8px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            padding: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+
+        /* Glowing Button */
+        .btn-ai {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-ai:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.6);
+        }
+
+        .btn-ai:active {
+            transform: translateY(0);
+        }
+
+        .btn-ai::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to bottom right,
+                rgba(255, 255, 255, 0.3) 0%,
+                rgba(255, 255, 255, 0) 60%
+            );
+            transform: rotate(30deg);
+            pointer-events: none;
+        }
+
+        /* Metric Cards with Hover Effects */
+        .metric-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            border-radius: 14px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--dark);
+            opacity: 0.8;
+        }
+
+        /* Pulsing Map Markers */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .pulse-marker {
+            animation: pulse 2s infinite;
+        }
+
+        /* Hexbin Clustering */
+        .hexbin-hexagon {
+            stroke: #fff;
+            stroke-width: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .hexbin-hexagon:hover {
+            stroke-width: 2px;
+            stroke: var(--accent);
+        }
+
+        /* Recommendation Cards */
+        .recommendation-card {
+            background: rgba(0, 206, 255, 0.1);
+            border-left: 4px solid var(--secondary);
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .recommendation-card:hover {
+            transform: translateX(5px);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .recommendation-card h4 {
+            margin-top: 0;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        /* Floating Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--glass);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(8px);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            margin-right: 0.8rem;
+            border-radius: 4px;
+        }
+
+        /* Voice Control Button */
+        .voice-control {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--accent);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(253, 121, 168, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .voice-control:hover {
+            transform: scale(1.1);
+        }
+
+        .voice-control.listening {
+            animation: pulse 1s infinite;
+            background: #00b894;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <h1>FreshCart | AI Retail Expansion Suite</h1>
+        </header>
+        
+        <aside class="sidebar">
+            <h2 style="color: var(--primary); border-bottom: 2px solid var(--secondary); padding-bottom: 0.5rem;">Expansion Parameters</h2>
+            
+            <div class="form-group">
+                <label for="analysisType">Strategy Mode</label>
+                <select id="analysisType">
+                    <option value="demandGap">Demand Gap Analysis</option>
+                    <option value="affluentFocus">Affluent Household Targeting</option>
+                    <option value="competitorAvoidance">Competitor Avoidance</option>
+                    <option value="logisticsOptimized">Logistics-Optimized</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="populationWeight">Population Weight: <span id="popValue">7</span>/10</label>
+                <input type="range" id="populationWeight" min="0" max="10" value="7">
+            </div>
+            
+            <div class="form-group">
+                <label for="incomeWeight">Income Alignment: <span id="incomeValue">6</span>/10</label>
+                <input type="range" id="incomeWeight" min="0" max="10" value="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="competitorWeight">Competitor Buffer: <span id="compValue">8</span>/10</label>
+                <input type="range" id="competitorWeight" min="0" max="10" value="8">
+            </div>
+            
+            <button id="updateAnalysis" class="btn-ai">
+                <span id="btnText">Run AI Analysis</span>
+                <span id="aiLoading" style="display:none;">🔮 Processing...</span>
+            </button>
+            
+            <div class="recommendation-card">
+                <h4>AI Recommendation</h4>
+                <p id="recommendationText">Initializing neural analysis... Prioritizing high-growth Tier 2 cities with population >500K and competitor density <2 stores/sqkm.</p>
+            </div>
+            
+            <h3 style="color: var(--primary); margin-top: 2rem;">Market Heat Legend</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #6C5CE7;"></div>
+                <span>FreshCart Stores</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #E84393;"></div>
+                <span>Competitors</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00CEFF;"></div>
+                <span>Recommended Sites</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(90deg, #6C5CE7, #E84393);"></div>
+                <span>Demand Heatmap</span>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="map-container">
+                <div id="mainMap"></div>
+                <div class="voice-control" id="voiceControl" title="Voice Command">
+                    🎙️
+                </div>
+                <div class="legend">
+                    <h4 style="margin-top: 0; color: var(--primary);">Market Potential</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #0984e3;"></div>
+                        <span>High (Top 20%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00b894;"></div>
+                        <span>Medium (40-60%)</span>
+                    </div>
+                    <div class="legend-color" style="background: #fdcb6e;"></div>
+                    <span>Low (Bottom 40%)</span>
+                </div>
+            </div>
+            
+            <div class="stats-panel">
+                <h2 style="color: var(--primary); border-bottom: 2px solid var(--secondary); padding-bottom: 0.5rem;">Market Intelligence</h2>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Untapped Potential</div>
+                    <div class="metric-value" id="marketCoverage">₹42.8B</div>
+                    <div>in underserved markets</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Target Affluence</div>
+                    <div class="metric-value" id="avgDistance">68%</div>
+                    <div>households in ₹8-15L range</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Competitor Threat</div>
+                    <div class="metric-value" id="demoFit">3.2/10</div>
+                    <div>lower is better</div>
+                </div>
+                
+                <h3 style="color: var(--primary); margin-top: 1.5rem;">Top Expansion Cities</h3>
+                <ol id="recommendedSites" style="padding-left: 1.2rem;">
+                    <li><strong>Indore</strong> (Score: 94) <span class="metric-label">+22% projected ROI</span></li>
+                    <li><strong>Coimbatore</strong> (Score: 89) <span class="metric-label">18% grocery gap</span></li>
+                    <li><strong>Visakhapatnam</strong> (Score: 87) <span class="metric-label">Low competition</span></li>
+                    <li><strong>Nagpur</strong> (Score: 85) <span class="metric-label">Logistics hub</span></li>
+                    <li><strong>Thiruvananthapuram</strong> (Score: 82) <span class="metric-label">High income density</span></li>
+                </ol>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-panel">
+                    <h3>Population vs. Retail Coverage</h3>
+                    <canvas id="populationChart"></canvas>
+                </div>
+                
+                <div class="chart-panel">
+                    <h3>Income Distribution Analysis</h3>
+                    <canvas id="incomeChart"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize the map centered on India
+        const map = L.map('mainMap').setView([20.5937, 78.9629], 5);
+        
+        // Modern Map Tiles with Labels
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Gradient for the map background
+        document.querySelector('.map-container').style.background = 
+            'linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(0,206,255,0.1) 100%)';
+
+        // Mock data for Indian cities
+        const indianCities = {
+            "Mumbai": { lat: 19.0760, lng: 72.8777, pop: 20.4, income: 9.8, competitors: 28 },
+            "Delhi": { lat: 28.7041, lng: 77.1025, pop: 18.7, income: 8.9, competitors: 32 },
+            "Bangalore": { lat: 12.9716, lng: 77.5946, pop: 12.3, income: 11.2, competitors: 24 },
+            "Hyderabad": { lat: 17.3850, lng: 78.4867, pop: 10.5, income: 8.5, competitors: 18 },
+            "Chennai": { lat: 13.0827, lng: 80.2707, pop: 10.2, income: 7.9, competitors: 21 },
+            "Kolkata": { lat: 22.5726, lng: 88.3639, pop: 14.9, income: 6.7, competitors: 19 },
+            // Tier-2 Cities
+            "Indore": { lat: 22.7196, lng: 75.8577, pop: 3.2, income: 7.1, competitors: 5 },
+            "Pune": { lat: 18.5204, lng: 73.8567, pop: 7.1, income: 9.3, competitors: 12 },
+            "Jaipur": { lat: 26.9124, lng: 75.7873, pop: 3.9, income: 6.8, competitors: 8 },
+            "Coimbatore": { lat: 11.0168, lng: 76.9558, pop: 2.5, income: 7.5, competitors: 4 },
+            "Visakhapatnam": { lat: 17.6868, lng: 83.2185, pop: 2.3, income: 6.9, competitors: 3 },
+            "Nagpur": { lat: 21.1458, lng: 79.0882, pop: 2.9, income: 6.5, competitors: 6 },
+            "Thiruvananthapuram": { lat: 8.5241, lng: 76.9366, pop: 1.9, income: 8.2, competitors: 3 }
+        };
+
+        // Mock FreshCart stores (40 stores across India)
+        const freshCartStores = [];
+        Object.keys(indianCities).forEach(city => {
+            const cityData = indianCities[city];
+            const storeCount = Math.max(1, Math.floor(cityData.pop / 2));
+            
+            for (let i = 0; i < storeCount; i++) {
+                // Add slight randomness to store locations within the city
+                const lat = cityData.lat + (Math.random() * 0.2 - 0.1);
+                const lng = cityData.lng + (Math.random() * 0.2 - 0.1);
+                const sales = (cityData.income * 500000) * (0.8 + Math.random() * 0.4);
+                
+                freshCartStores.push({
+                    lat, lng,
+                    name: `FreshCart ${city} ${i+1}`,
+                    sales: sales,
+                    city: city
+                });
+            }
+        });
+
+        // Mock competitors (BigBazaar, D-Mart, Reliance Fresh, etc.)
+        const competitors = [];
+        Object.keys(indianCities).forEach(city => {
+            const cityData = indianCities[city];
+            const compCount = cityData.competitors;
+            
+            for (let i = 0; i < compCount; i++) {
+                const lat = cityData.lat + (Math.random() * 0.3 - 0.15);
+                const lng = cityData.lng + (Math.random() * 0.3 - 0.15);
+                const brands = ["BigBazaar", "D-Mart", "Reliance Fresh", "More", "Spencer's", "Star Bazaar"];
+                
+                competitors.push({
+                    lat, lng,
+                    name: `${brands[i % brands.length]} ${city}`,
+                    city: city
+                });
+            }
+        });
+
+        // Recommended expansion sites (Tier-2 focus)
+        const recommendedSites = [
+            { lat: 22.7196, lng: 75.8577, name: "Indore", score: 94, reason: "High growth, low competition" },
+            { lat: 11.0168, lng: 76.9558, name: "Coimbatore", score: 89, reason: "Affluent population" },
+            { lat: 17.6868, lng: 83.2185, name: "Visakhapatnam", score: 87, reason: "Port city advantage" },
+            { lat: 21.1458, lng: 79.0882, name: "Nagpur", score: 85, reason: "Central logistics hub" },
+            { lat: 8.5241, lng: 76.9366, name: "Thiruvananthapuram", score: 82, reason: "High income density" }
+        ];
+
+        // Heatmap data - population + income weighted
+        const heatData = [];
+        Object.keys(indianCities).forEach(city => {
+            const cityData = indianCities[city];
+            // Create multiple heat points per city for density
+            for (let i = 0; i < 5; i++) {
+                const lat = cityData.lat + (Math.random() * 0.3 - 0.15);
+                const lng = cityData.lng + (Math.random() * 0.3 - 0.15);
+                // Heat intensity based on population and income
+                const intensity = (cityData.pop / 20) * (cityData.income / 10);
+                heatData.push([lat, lng, intensity]);
+            }
+        });
+
+        // Custom SVG icons with pulsing effect
+        const freshCartIcon = L.divIcon({
+            html: `
+                <div style="
+                    background: #6C5CE7;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.3);
+                ">
+                    FC
+                </div>
+            `,
+            className: 'pulse-marker',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
+        const competitorIcon = L.divIcon({
+            html: `
+                <div style="
+                    background: #E84393;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    box-shadow: 0 0 0 4px rgba(232, 67, 147, 0.3);
+                ">
+                    C
+                </div>
+            `,
+            className: 'pulse-marker',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+
+        const recommendedIcon = L.divIcon({
+            html: `
+                <div style="
+                    background: #00CEFF;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    box-shadow: 0 0 0 6px rgba(0, 206, 255, 0.3);
+                    animation: pulse 1.5s infinite;
+                ">
+                    ★
+                </div>
+            `,
+            className: '',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+
+        // Add heatmap layer
+        const heatLayer = L.heatLayer(heatData, {
+            radius: 25,
+            blur: 20,
+            maxZoom: 12,
+            max: 0.5,
+            gradient: {
+                0.1: '#74b9ff',
+                0.3: '#0984e3',
+                0.5: '#00b894',
+                0.7: '#fdcb6e',
+                1.0: '#e17055'
+            }
+        }).addTo(map);
+
+        // Cluster markers for better visualization
+        const storesCluster = L.markerClusterGroup({
+            iconCreateFunction: function (cluster) {
+                const count = cluster.getChildCount();
+                let size = '40px';
+                if (count > 10) size = '50px';
+                if (count > 20) size = '60px';
+                
+                return L.divIcon({
+                    html: `<div style="
+                        background: rgba(108, 92, 231, 0.8);
+                        width: ${size};
+                        height: ${size};
+                        border-radius: 50%;
+                        border: 3px solid white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: bold;
+                        font-size: ${count > 20 ? '1.2rem' : '1rem'};
+                        box-shadow: 0 0 0 5px rgba(108, 92, 231, 0.2);
+                    ">${count}</div>`,
+                    className: '',
+                    iconSize: L.point(parseInt(size), parseInt(size))
+                });
+            }
+        });
+
+        // Add FreshCart stores to cluster
+        freshCartStores.forEach(store => {
+            const marker = L.marker([store.lat, store.lng], { icon: freshCartIcon })
+                .bindPopup(`<b>${store.name}</b><br>Estimated Sales: ₹${(store.sales/100000).toFixed(1)}L/year`);
+            storesCluster.addLayer(marker);
+        });
+        map.addLayer(storesCluster);
+
+        // Add competitors
+        competitors.forEach(store => {
+            L.marker([store.lat, store.lng], { icon: competitorIcon })
+                .addTo(map)
+                .bindPopup(`<b>Competitor:</b> ${store.name}`);
+        });
+
+        // Add recommended sites
+        recommendedSites.forEach(site => {
+            L.marker([site.lat, site.lng], { icon: recommendedIcon })
+                .addTo(map)
+                .bindPopup(`<b>Recommended:</b> ${site.name}<br>Score: ${site.score}/100<br>${site.reason}`);
+        });
+
+        // Add city labels with circles
+        Object.keys(indianCities).forEach(city => {
+            const cityData = indianCities[city];
+            const radius = cityData.pop * 1000; // Scale for visibility
+            
+            L.circle([cityData.lat, cityData.lng], {
+                radius: radius,
+                fillColor: '#6C5CE7',
+                fillOpacity: 0.1,
+                color: '#6C5CE7',
+                weight: 1
+            }).addTo(map);
+            
+            // Add city labels
+            L.marker([cityData.lat, cityData.lng], {
+                icon: L.divIcon({
+                    html: `<div style="
+                        font-weight: bold;
+                        color: ${cityData.pop > 10 ? '#2d3436' : '#6C5CE7'};
+                        text-shadow: 1px 1px 3px white;
+                        font-size: ${cityData.pop > 10 ? '1.1rem' : '0.9rem'};
+                        transform: translate(-50%, -50%);
+                    ">${city}</div>`,
+                    className: '',
+                    iconSize: [0, 0]
+                })
+            }).addTo(map);
+        });
+
+        // Initialize charts with percentage labels
+        const populationCtx = document.getElementById('populationChart').getContext('2d');
+        const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+
+        const populationChart = new Chart(populationCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Indore', 'Coimbatore'],
+                datasets: [{
+                    label: 'Population (Millions)',
+                    data: [20.4, 18.7, 12.3, 10.5, 10.2, 3.2, 2.5],
+                    backgroundColor: 'rgba(108, 92, 231, 0.7)',
+                    borderColor: 'rgba(108, 92, 231, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Store Coverage (%)',
+                    data: [65, 58, 72, 45, 51, 28, 19],
+                    type: 'line',
+                    borderColor: '#00CEFF',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#00CEFF',
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.datasetIndex === 1) {
+                                    label += context.raw + '%';
+                                } else {
+                                    label += context.raw.toFixed(1);
+                                    if (context.datasetIndex === 0) label += 'M';
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Population (Millions)'
+                        }
+                    },
+                    y1: {
+                        position: 'right',
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Coverage %'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const incomeChart = new Chart(incomeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['<₹5L', '₹5L-₹8L', '₹8L-₹12L', '₹12L-₹15L', '>₹15L'],
+                datasets: [{
+                    data: [15, 22, 28, 25, 10],
+                    backgroundColor: [
+                        'rgba(108, 92, 231, 0.7)',
+                        'rgba(0, 206, 255, 0.7)',
+                        'rgba(253, 203, 110, 0.7)',
+                        'rgba(232, 67, 147, 0.7)',
+                        'rgba(0, 184, 148, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value}% (${percentage}% of target)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return percentage + '%';
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        }
+                    }
+                },
+                cutout: '65%'
+            },
+            plugins: [{
+                id: 'datalabels',
+                afterDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const datapoints = chart.data.datasets[0].data;
+                    const total = datapoints.reduce((a, b) => a + b, 0);
+                    
+                    chart.data.datasets.forEach((dataset, i) => {
+                        const meta = chart.getDatasetMeta(i);
+                        if (!meta.hidden) {
+                            meta.data.forEach((element, index) => {
+                                // Draw percentage in the center of each segment
+                                const percentage = Math.round((datapoints[index] / total) * 100);
+                                const x = element.tooltipPosition().x;
+                                const y = element.tooltipPosition().y;
+                                
+                                ctx.font = 'bold 12px Plus Jakarta Sans';
+                                ctx.fillStyle = '#2d3436';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(percentage + '%', x, y);
+                            });
+                        }
+                    });
+                }
+            }]
+        });
+
+        // Update analysis function with AI simulation
+        document.getElementById('updateAnalysis').addEventListener('click', function() {
+            const btn = this;
+            const btnText = document.getElementById('btnText');
+            const aiLoading = document.getElementById('aiLoading');
+            
+            // Show loading state
+            btnText.style.display = 'none';
+            aiLoading.style.display = 'inline';
+            btn.disabled = true;
+            
+            // Simulate AI processing delay
+            setTimeout(() => {
+                const popWeight = parseInt(document.getElementById('populationWeight').value);
+                const incomeWeight = parseInt(document.getElementById('incomeWeight').value);
+                const compWeight = parseInt(document.getElementById('competitorWeight').value);
+                const analysisType = document.getElementById('analysisType').value;
+                
+                // Update range value displays
+                document.getElementById('popValue').textContent = popWeight;
+                document.getElementById('incomeValue').textContent = incomeWeight;
+                document.getElementById('compValue').textContent = compWeight;
+                
+                // Simulate different analysis scenarios
+                let recommendation = "";
+                let marketPotential = Math.min(100, 42 + popWeight * 3 + incomeWeight * 2 - compWeight * 0.8);
+                let affluentTarget = Math.min(100, 68 + incomeWeight * 3);
+                let compThreat = Math.max(1, 3.2 - compWeight * 0.25);
+                
+                // Tier-2 city recommendations based on weights
+                const tier2Cities = [
+                    { name: "Indore", baseScore: 94, popFactor: 0.7, incomeFactor: 0.8, compFactor: 1.2 },
+                    { name: "Coimbatore", baseScore: 89, popFactor: 0.6, incomeFactor: 1.0, compFactor: 1.1 },
+                    { name: "Visakhapatnam", baseScore: 87, popFactor: 0.5, incomeFactor: 0.7, compFactor: 1.3 },
+                    { name: "Nagpur", baseScore: 85, popFactor: 0.8, incomeFactor: 0.6, compFactor: 1.1 },
+                    { name: "Thiruvananthapuram", baseScore: 82, popFactor: 0.4, incomeFactor: 1.2, compFactor: 0.9 }
+                ];
+                
+                // Calculate dynamic scores
+                tier2Cities.forEach(city => {
+                    city.score = Math.min(100, Math.round(
+                        city.baseScore + 
+                        (popWeight * city.popFactor) + 
+                        (incomeWeight * city.incomeFactor) - 
+                        (compWeight * city.compFactor)
+                    ));
+                });
+                
+                // Sort by new score
+                tier2Cities.sort((a, b) => b.score - a.score);
+                
+                if (analysisType === "demandGap") {
+                    recommendation = `AI recommends prioritizing <strong>${tier2Cities[0].name}</strong> and <strong>${tier2Cities[1].name}</strong> where population-to-store ratios exceed 5,000:1.`;
+                    marketPotential = Math.min(100, marketPotential + 8);
+                } else if (analysisType === "affluentFocus") {
+                    recommendation = `Target <strong>${tier2Cities[0].name}</strong> (${Math.round(tier2Cities[0].score)}/100) for its high concentration of ₹8L-15L households (projected 68% match).`;
+                    affluentTarget = Math.min(100, affluentTarget + 12);
+                } else if (analysisType === "competitorAvoidance") {
+                    recommendation = `Expand in <strong>${tier2Cities[0].name}</strong> with only ${Math.floor(indianCities[tier2Cities[0].name].competitors/2)} major competitors per proposed site.`;
+                    compThreat = Math.max(1, compThreat - 1.5);
+                } else {
+                    recommendation = `Optimize supply chains with <strong>${tier2Cities[0].name}</strong> as regional hub (within 300km of 4 warehouses).`;
+                }
+                
+                // Update UI
+                document.getElementById('recommendationText').innerHTML = recommendation;
+                document.getElementById('marketCoverage').textContent = `₹${(marketPotential * 1.02).toFixed(1)}B`;
+                document.getElementById('avgDistance').textContent = `${Math.round(affluentTarget)}%`;
+                document.getElementById('demoFit').textContent = `${compThreat.toFixed(1)}/10`;
+                
+                // Update recommended sites list
+                const sitesList = document.getElementById('recommendedSites');
+                sitesList.innerHTML = '';
+                tier2Cities.forEach(city => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${city.name}</strong> (Score: ${city.score}) <span class="metric-label">${getCityInsight(city.name)}</span>`;
+                    sitesList.appendChild(li);
+                });
+                
+                // Update heatmap based on weights
+                const newHeatData = heatData.map(point => {
+                    // Find which city this point belongs to
+                    const city = Object.keys(indianCities).find(city => {
+                        const cityData = indianCities[city];
+                        return Math.abs(point[0] - cityData.lat) < 0.2 && Math.abs(point[1] - cityData.lng) < 0.2;
+                    });
+                    
+                    if (city) {
+                        const cityData = indianCities[city];
+                        let intensity = point[2];
+                        
+                        // Adjust based on analysis type
+                        if (analysisType === "demandGap") {
+                            intensity *= (0.5 + popWeight/15) * (1 - cityData.competitors/50);
+                        } else if (analysisType === "affluentFocus") {
+                            intensity *= (0.3 + incomeWeight/12) * (cityData.income/8);
+                        } else if (analysisType === "competitorAvoidance") {
+                            intensity *= (0.7 - cityData.competitors/40) * (0.5 + compWeight/10);
+                        } else {
+                            // Logistics optimized - boost cities with good transport
+                            const logisticsFactor = city.includes('Indore') || city.includes('Nagpur') ? 1.3 : 0.9;
+                            intensity *= logisticsFactor;
+                        }
+                        
+                        return [point[0], point[1], Math.min(1, intensity)];
+                    }
+                    return point;
+                });
+                
+                map.removeLayer(heatLayer);
+                L.heatLayer(newHeatData, {
+                    radius: 25,
+                    blur: 20,
+                    maxZoom: 12,
+                    max: 0.5,
+                    gradient: {
+                        0.1: '#74b9ff',
+                        0.3: '#0984e3',
+                        0.5: '#00b894',
+                        0.7: '#fdcb6e',
+                        1.0: '#e17055'
+                    }
+                }).addTo(map);
+                
+                // Restore button state
+                btnText.style.display = 'inline';
+                aiLoading.style.display = 'none';
+                btn.disabled = false;
+            }, 1500); // Simulate 1.5s processing time
+        });
+        
+        // Helper function for city insights
+        function getCityInsight(cityName) {
+            const city = indianCities[cityName];
+            const insights = [
+                `+${Math.floor(10 + Math.random() * 15)}% projected ROI`,
+                `${Math.floor(15 + Math.random() * 10)}% grocery gap`,
+                `${Math.floor(60 + Math.random() * 30)}% target demographic`,
+                `Logistics score ${Math.floor(60 + Math.random() * 35)}/100`,
+                `Only ${city.competitors} competitors`
+            ];
+            return insights[Math.floor(Math.random() * insights.length)];
+        }
+        
+        // Voice control integration
+        const voiceControl = document.getElementById('voiceControl');
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        
+        voiceControl.addEventListener('click', function() {
+            if (voiceControl.classList.contains('listening')) {
+                recognition.stop();
+                voiceControl.classList.remove('listening');
+                voiceControl.textContent = '🎙️';
+            } else {
+                recognition.start();
+                voiceControl.classList.add('listening');
+                voiceControl.textContent = '🔴 Listening...';
+            }
+        });
+        
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            voiceControl.classList.remove('listening');
+            voiceControl.textContent = '🎙️';
+            
+            // Process voice commands
+            if (transcript.includes('population')) {
+                const value = getNumberFromSpeech(transcript);
+                if (value !== null) {
+                    document.getElementById('populationWeight').value = value;
+                    document.getElementById('popValue').textContent = value;
+                    simulateClick(document.getElementById('updateAnalysis'));
+                }
+            } else if (transcript.includes('income')) {
+                const value = getNumberFromSpeech(transcript);
+                if (value !== null) {
+                    document.getElementById('incomeWeight').value = value;
+                    document.getElementById('incomeValue').textContent = value;
+                    simulateClick(document.getElementById('updateAnalysis'));
+                }
+            } else if (transcript.includes('competitor') || transcript.includes('competition')) {
+                const value = getNumberFromSpeech(transcript);
+                if (value !== null) {
+                    document.getElementById('competitorWeight').value = value;
+                    document.getElementById('compValue').textContent = value;
+                    simulateClick(document.getElementById('updateAnalysis'));
+                }
+            } else if (transcript.includes('analyze') || transcript.includes('run')) {
+                simulateClick(document.getElementById('updateAnalysis'));
+            } else if (transcript.includes('demand gap')) {
+                document.getElementById('analysisType').value = 'demandGap';
+                simulateClick(document.getElementById('updateAnalysis'));
+            } else if (transcript.includes('affluent')) {
+                document.getElementById('analysisType').value = 'affluentFocus';
+                simulateClick(document.getElementById('updateAnalysis'));
+            }
+        };
+        
+        recognition.onerror = function(event) {
+            voiceControl.classList.remove('listening');
+            voiceControl.textContent = '🎙️';
+        };
+        
+        function getNumberFromSpeech(transcript) {
+            const numbers = {
+                'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4,
+                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+            };
+            
+            for (const [word, num] of Object.entries(numbers)) {
+                if (transcript.includes(word)) return num;
+            }
+            
+            // Try to parse direct numbers
+            const match = transcript.match(/\d+/);
+            if (match) return Math.min(10, Math.max(0, parseInt(match[0])));
+            
+            return null;
+        }
+        
+        function simulateClick(element) {
+            const event = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+            });
+            element.dispatchEvent(event);
+        }
+        
+        // Initialize range value displays
+        document.getElementById('populationWeight').addEventListener('input', function() {
+            document.getElementById('popValue').textContent = this.value;
+        });
+        
+        document.getElementById('incomeWeight').addEventListener('input', function() {
+            document.getElementById('incomeValue').textContent = this.value;
+        });
+        
+        document.getElementById('competitorWeight').addEventListener('input', function() {
+            document.getElementById('compValue').textContent = this.value;
+        });
+    </script>
+</body>
+</html>
